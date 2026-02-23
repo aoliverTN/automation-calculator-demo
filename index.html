@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Savings Calculator | ThrottleNet</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --tn-green: #76AD4D;
+            --tn-blue: #244C5A;
+            --tn-gold: #D49600;
+            --dark-bg: #0f1923;
+            --card-bg: #1a2d3a;
+            --card-border: #2a4a5a;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: var(--dark-bg);
+            color: #e0e8ec;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(118, 173, 77, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(36, 76, 90, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(212, 150, 0, 0.06) 0%, transparent 50%);
+            z-index: 0;
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--tn-green), #a0d070);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: #7a9aa8;
+            font-weight: 300;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(118, 173, 77, 0.1);
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            color: var(--tn-green);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card h2 .icon {
+            font-size: 1.5rem;
+        }
+
+        /* Form elements */
+        label {
+            display: block;
+            font-size: 0.9rem;
+            color: #7a9aa8;
+            margin-bottom: 0.4rem;
+            font-weight: 400;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: #0f1923;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: #e0e8ec;
+            font-family: 'Prompt', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 1.2rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            appearance: auto;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--tn-green);
+            box-shadow: 0 0 0 3px rgba(118, 173, 77, 0.2);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Button */
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--tn-green), #5a8a3a);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: 'Prompt', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(118, 173, 77, 0.35);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Results */
+        #results {
+            display: none;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .results-header h2 {
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #1e3545, #162a36);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.03);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #7a9aa8;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .green { color: var(--tn-green); }
+        .gold { color: var(--tn-gold); }
+        .blue { color: #4db8d4; }
+
+        /* Progress bar */
+        .efficiency-bar {
+            margin-top: 1rem;
+        }
+
+        .efficiency-bar label {
+            font-size: 0.95rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 28px;
+            background: #0f1923;
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--tn-green), #a0d070);
+            border-radius: 14px;
+            width: 0%;
+            transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--dark-bg);
+        }
+
+        /* Verdict */
+        .verdict {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(118, 173, 77, 0.1), rgba(36, 76, 90, 0.15));
+            border: 1px solid rgba(118, 173, 77, 0.3);
+            border-radius: 14px;
+            margin-top: 1rem;
+        }
+
+        .verdict h3 {
+            color: var(--tn-gold);
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .verdict p {
+            color: #a0b8c4;
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1.5rem;
+            color: #4a6a78;
+            font-size: 0.85rem;
+            border-top: 1px solid #1a2d3a;
+        }
+
+        footer span {
+            color: var(--tn-green);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            header h1 { font-size: 2rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .row { grid-template-columns: 1fr; }
+            .stat-value { font-size: 1.8rem; }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: var(--tn-green);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating particles -->
+    <div class="particle" style="top:10%;left:20%"></div>
+    <div class="particle" style="top:30%;left:85%"></div>
+    <div class="particle" style="top:60%;left:10%"></div>
+    <div class="particle" style="top:80%;left:75%"></div>
+    <div class="particle" style="top:45%;left:50%"></div>
+
+    <div class="container">
+        <header>
+            <h1>Automation Savings Calculator</h1>
+            <p>See how much time and money automation can save</p>
+        </header>
+
+        <!-- Input Card -->
+        <div class="card">
+            <h2><span class="icon">⚙️</span> Configure Your Task</h2>
+
+            <label for="task">What boring task do you want to automate?</label>
+            <select id="task">
+                <option value="">-- Pick a task --</option>
+                <option value="data">Data Entry (copying info between systems)</option>
+                <option value="invoice">Invoice Processing (matching & approving)</option>
+                <option value="email">Email Sorting & Responding</option>
+                <option value="report">Report Generation</option>
+                <option value="password">Password Resets & IT Tickets</option>
+                <option value="onboard">Employee Onboarding Paperwork</option>
+                <option value="inventory">Inventory Tracking & Updates</option>
+                <option value="scheduling">Meeting Scheduling & Calendar Management</option>
+            </select>
+
+            <div class="row">
+                <div>
+                    <label for="minutes">Minutes per task (human)</label>
+                    <input type="number" id="minutes" min="1" max="480" value="15" placeholder="e.g. 15">
+                </div>
+                <div>
+                    <label for="frequency">Times per week</label>
+                    <input type="number" id="frequency" min="1" max="500" value="20" placeholder="e.g. 20">
+                </div>
+            </div>
+
+            <div class="row">
+                <div>
+                    <label for="hourlyRate">Hourly wage ($)</label>
+                    <input type="number" id="hourlyRate" min="10" max="500" value="25" placeholder="e.g. 25">
+                </div>
+                <div>
+                    <label for="employees">Number of employees doing this</label>
+                    <input type="number" id="employees" min="1" max="1000" value="3" placeholder="e.g. 3">
+                </div>
+            </div>
+
+            <button class="btn" onclick="calculate()">Calculate Savings</button>
+        </div>
+
+        <!-- Results Card -->
+        <div id="results" class="card">
+            <div class="results-header">
+                <h2><span class="icon">📊</span> Your Automation Savings</h2>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value green" id="hoursYear">0</div>
+                    <div class="stat-label">Hours Saved / Year</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value gold" id="moneyYear">$0</div>
+                    <div class="stat-label">Money Saved / Year</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value blue" id="botSpeed">0s</div>
+                    <div class="stat-label">Bot Time Per Task</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value green" id="hoursWeek">0</div>
+                    <div class="stat-label">Hours Saved / Week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value gold" id="moneyMonth">$0</div>
+                    <div class="stat-label">Money Saved / Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value blue" id="errorRate">0%</div>
+                    <div class="stat-label">Error Reduction</div>
+                </div>
+            </div>
+
+            <div class="efficiency-bar">
+                <label>Efficiency Improvement</label>
+                <div class="bar-track">
+                    <div class="bar-fill" id="effBar">0%</div>
+                </div>
+            </div>
+
+            <div class="verdict" id="verdict">
+                <h3 id="verdictTitle">—</h3>
+                <p id="verdictText">—</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Built live with AI by <span>ThrottleNet</span>
+    </footer>
+
+    <script>
+        // Animate floating particles
+        document.querySelectorAll('.particle').forEach((p, i) => {
+            p.style.animation = `float ${3 + i * 0.7}s ease-in-out infinite alternate`;
+            p.style.animationDelay = `${i * 0.5}s`;
+        });
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0% { opacity: 0.2; transform: translateY(0) scale(1); }
+                100% { opacity: 0.5; transform: translateY(-30px) scale(1.5); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Bot speed multipliers by task type
+        const taskData = {
+            data: { speedFactor: 0.05, errorReduction: 99 },
+            invoice: { speedFactor: 0.08, errorReduction: 97 },
+            email: { speedFactor: 0.1, errorReduction: 95 },
+            report: { speedFactor: 0.03, errorReduction: 99 },
+            password: { speedFactor: 0.02, errorReduction: 100 },
+            onboard: { speedFactor: 0.06, errorReduction: 98 },
+            inventory: { speedFactor: 0.04, errorReduction: 99 },
+            scheduling: { speedFactor: 0.07, errorReduction: 96 },
+        };
+
+        function animateNumber(el, target, prefix = '', suffix = '', duration = 1200) {
+            const start = 0;
+            const startTime = performance.now();
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = Math.round(start + (target - start) * eased);
+                el.textContent = prefix + current.toLocaleString() + suffix;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        function calculate() {
+            const task = document.getElementById('task').value;
+            const minutes = parseFloat(document.getElementById('minutes').value) || 15;
+            const frequency = parseFloat(document.getElementById('frequency').value) || 20;
+            const hourlyRate = parseFloat(document.getElementById('hourlyRate').value) || 25;
+            const employees = parseFloat(document.getElementById('employees').value) || 1;
+
+            if (!task) {
+                alert('Please select a task to automate!');
+                return;
+            }
+
+            const info = taskData[task];
+            const humanMinutesWeek = minutes * frequency * employees;
+            const humanHoursWeek = humanMinutesWeek / 60;
+            const humanHoursYear = humanHoursWeek * 52;
+            const botMinutesPerTask = Math.max(Math.round(minutes * info.speedFactor * 60), 1);
+            const botMinutesWeek = (minutes * info.speedFactor) * frequency * employees;
+            const savedMinutesWeek = humanMinutesWeek - botMinutesWeek;
+            const savedHoursWeek = savedMinutesWeek / 60;
+            const savedHoursYear = savedHoursWeek * 52;
+            const savedMoneyYear = savedHoursYear * hourlyRate;
+            const savedMoneyMonth = savedMoneyYear / 12;
+            const efficiency = Math.min(Math.round((1 - info.speedFactor) * 100), 99);
+
+            // Show results
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+
+            // Scroll to results
+            setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+            // Animate stats
+            animateNumber(document.getElementById('hoursYear'), Math.round(savedHoursYear), '', '');
+            animateNumber(document.getElementById('moneyYear'), Math.round(savedMoneyYear), '$', '');
+            document.getElementById('botSpeed').textContent = botMinutesPerTask + 's';
+            animateNumber(document.getElementById('hoursWeek'), Math.round(savedHoursWeek), '', '');
+            animateNumber(document.getElementById('moneyMonth'), Math.round(savedMoneyMonth), '$', '');
+            document.getElementById('errorRate').textContent = info.errorReduction + '%';
+
+            // Animate efficiency bar
+            const bar = document.getElementById('effBar');
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = efficiency + '%';
+                bar.textContent = efficiency + '%';
+            }, 200);
+
+            // Verdict
+            const verdictTitle = document.getElementById('verdictTitle');
+            const verdictText = document.getElementById('verdictText');
+
+            if (savedMoneyYear > 100000) {
+                verdictTitle.textContent = '🚀 Massive ROI — Automate Immediately!';
+                verdictText.textContent = `You could save $${Math.round(savedMoneyYear).toLocaleString()} per year. That's like hiring ${Math.round(savedHoursYear / 2080)} full-time employees for free!`;
+            } else if (savedMoneyYear > 25000) {
+                verdictTitle.textContent = '💰 Strong Business Case for Automation';
+                verdictText.textContent = `$${Math.round(savedMoneyYear).toLocaleString()} in annual savings. The bot would pay for itself in weeks.`;
+            } else if (savedMoneyYear > 5000) {
+                verdictTitle.textContent = '✅ Worth Automating';
+                verdictText.textContent = `$${Math.round(savedMoneyYear).toLocaleString()} saved annually — plus zero errors and 24/7 availability.`;
+            } else {
+                verdictTitle.textContent = '📋 Quick Win';
+                verdictText.textContent = `$${Math.round(savedMoneyYear).toLocaleString()} saved per year. Small but adds up — and eliminates human error entirely.`;
+            }
+        }
+    </script>
+</body>
+</html>
