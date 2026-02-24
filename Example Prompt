@@ -1,0 +1,9 @@
+Build me a single-page Automation Savings Calculator website in the index.html
+ file in this repo. One file, visually stunning, dark background. 
+ Let the user pick a boring office task, set how long it takes and how often 
+ they do it, then show how much time and money automation saves per year. 
+ 
+ Make it interactive with animations and professional looking. 
+ Footer says "Built live with AI by ThrottleNet". 
+ 
+ When you're done, run: git add . && git commit -m "built with AI" && git push
