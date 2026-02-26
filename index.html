@@ -3,21 +3,688 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blank</title>
+    <title>Automation Savings Calculator</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #1a1a26;
+            --border: #2a2a40;
+            --accent: #6c63ff;
+            --accent2: #00d4aa;
+            --accent3: #ff6584;
+            --text: #e8e8f0;
+            --muted: #7070a0;
+            --glow: rgba(108, 99, 255, 0.3);
+        }
+
         body {
-            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 52px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,170,0.1));
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 18px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: clamp(28px, 5vw, 52px);
+            font-weight: 800;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 14px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 16px;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.5;
+        }
+
+        .card:hover { border-color: rgba(108,99,255,0.4); }
+
+        .card-title {
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            background: white;
-            font-family: sans-serif;
-            color: #999;
+            gap: 8px;
         }
+
+        .card-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Task selector */
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .task-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .task-btn .icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .task-btn:hover {
+            border-color: var(--accent);
+            background: rgba(108,99,255,0.08);
+            transform: translateY(-2px);
+        }
+
+        .task-btn.active {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(0,212,170,0.1));
+            box-shadow: 0 0 20px var(--glow);
+            transform: translateY(-2px);
+        }
+
+        /* Inputs */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 540px) { .input-row { grid-template-columns: 1fr; } }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text);
+            font-size: 16px;
+            font-family: inherit;
+            appearance: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--glow);
+        }
+
+        .unit {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        /* Slider */
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-val {
+            color: var(--accent2);
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 100px;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            box-shadow: 0 0 10px var(--glow);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        /* Results */
+        #results {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        #results.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover { transform: translateY(-3px); }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+        }
+
+        .stat-card.time::after { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+        .stat-card.money::after { background: linear-gradient(90deg, var(--accent2), #00ff88); }
+        .stat-card.days::after { background: linear-gradient(90deg, var(--accent3), var(--accent)); }
+        .stat-card.roi::after { background: linear-gradient(90deg, #ffd700, var(--accent3)); }
+
+        .stat-label {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: clamp(26px, 4vw, 36px);
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-card.time .stat-value { color: var(--accent); }
+        .stat-card.money .stat-value { color: var(--accent2); }
+        .stat-card.days .stat-value { color: var(--accent3); }
+        .stat-card.roi .stat-value { color: #ffd700; }
+
+        .stat-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* Progress bar */
+        .breakdown {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        .breakdown-title {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .bar-label { width: 120px; color: var(--muted); flex-shrink: 0; }
+
+        .bar-track {
+            flex: 1;
+            height: 10px;
+            background: var(--border);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 100px;
+            width: 0;
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .bar-fill.manual { background: linear-gradient(90deg, var(--accent3), #ff9a8b); }
+        .bar-fill.auto   { background: linear-gradient(90deg, var(--accent2), #00ff88); }
+
+        .bar-amount { width: 80px; text-align: right; font-weight: 600; }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            margin-top: 32px;
+            padding: 32px;
+            background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(0,212,170,0.05));
+            border: 1px solid rgba(108,99,255,0.2);
+            border-radius: 20px;
+        }
+
+        .cta-section h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .cta-section p {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 14px 36px;
+            border-radius: 100px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 24px var(--glow);
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 32px var(--glow);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 32px 0 24px;
+            color: var(--muted);
+            font-size: 13px;
+            position: relative;
+            z-index: 1;
+        }
+
+        footer span { color: var(--accent); font-weight: 600; }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+            animation: drift 12s ease-in-out infinite alternate;
+        }
+
+        .orb1 { width: 400px; height: 400px; background: rgba(108,99,255,0.08); top: -100px; right: -100px; animation-delay: 0s; }
+        .orb2 { width: 300px; height: 300px; background: rgba(0,212,170,0.06); bottom: 100px; left: -80px; animation-delay: -4s; }
+
+        @keyframes drift {
+            from { transform: translate(0, 0); }
+            to   { transform: translate(30px, 40px); }
+        }
+
+        /* Number counter animation */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-value { animation: countUp 0.5s ease forwards; }
+
+        select option { background: var(--surface2); }
     </style>
 </head>
 <body>
-    <p>Welcome Class - Blank website — nothing lives here yet.  But it will soon! </p>
+
+<div class="noise"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="container">
+
+    <header>
+        <div class="badge">⚡ ROI Calculator</div>
+        <h1>How Much Is Manual<br>Work Costing You?</h1>
+        <p class="subtitle">Pick a task, set the numbers, and see exactly how much time and money automation saves your business every year.</p>
+    </header>
+
+    <!-- Step 1: Task -->
+    <div class="card">
+        <div class="card-title">01 — Choose a task</div>
+        <div class="task-grid" id="taskGrid">
+            <button class="task-btn active" data-task="Data Entry" onclick="selectTask(this)">
+                <span class="icon">📋</span>Data Entry
+            </button>
+            <button class="task-btn" data-task="Invoicing" onclick="selectTask(this)">
+                <span class="icon">🧾</span>Invoicing
+            </button>
+            <button class="task-btn" data-task="Email Sorting" onclick="selectTask(this)">
+                <span class="icon">📧</span>Email Sorting
+            </button>
+            <button class="task-btn" data-task="Report Generation" onclick="selectTask(this)">
+                <span class="icon">📊</span>Report Generation
+            </button>
+            <button class="task-btn" data-task="Scheduling" onclick="selectTask(this)">
+                <span class="icon">📅</span>Scheduling
+            </button>
+            <button class="task-btn" data-task="File Management" onclick="selectTask(this)">
+                <span class="icon">📁</span>File Management
+            </button>
+            <button class="task-btn" data-task="Customer Follow-ups" onclick="selectTask(this)">
+                <span class="icon">📞</span>Customer Follow-ups
+            </button>
+            <button class="task-btn" data-task="Payroll Processing" onclick="selectTask(this)">
+                <span class="icon">💸</span>Payroll Processing
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: Time & Frequency -->
+    <div class="card">
+        <div class="card-title">02 — Set the details</div>
+        <div class="input-row" style="margin-bottom: 24px;">
+            <div class="input-group">
+                <label>Time per occurrence</label>
+                <div class="input-wrap">
+                    <input type="number" id="minutesPerTask" value="30" min="1" max="480" oninput="calculate()">
+                    <span class="unit">minutes</span>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>How often is it done?</label>
+                <div class="input-wrap">
+                    <select id="frequency" onchange="calculate()">
+                        <option value="1">Once a day</option>
+                        <option value="5" selected>5× per week</option>
+                        <option value="10">Twice a day (Mon–Fri)</option>
+                        <option value="20">Multiple times daily</option>
+                        <option value="0.5">A few times a week</option>
+                        <option value="0.14">About once a week</option>
+                        <option value="0.033">A few times a month</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <label>Hourly cost of employee doing this task</label>
+                <span class="slider-val" id="wageDisplay">$35/hr</span>
+            </div>
+            <input type="range" id="hourlyWage" min="15" max="150" value="35" step="5" oninput="updateWage(); calculate()">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted);">
+                <span>$15/hr</span><span>$150/hr</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+        <div class="card">
+            <div class="card-title">03 — Your savings</div>
+
+            <div class="results-grid">
+                <div class="stat-card time">
+                    <div class="stat-label">Hours saved / year</div>
+                    <div class="stat-value" id="hoursSaved">—</div>
+                    <div class="stat-sub">hours reclaimed</div>
+                </div>
+                <div class="stat-card money">
+                    <div class="stat-label">Money saved / year</div>
+                    <div class="stat-value" id="moneySaved">—</div>
+                    <div class="stat-sub">in labor cost</div>
+                </div>
+                <div class="stat-card days">
+                    <div class="stat-label">Work days freed up</div>
+                    <div class="stat-value" id="daysSaved">—</div>
+                    <div class="stat-sub">8-hour work days</div>
+                </div>
+                <div class="stat-card roi">
+                    <div class="stat-label">5-Year value</div>
+                    <div class="stat-value" id="fiveYear">—</div>
+                    <div class="stat-sub">cumulative savings</div>
+                </div>
+            </div>
+
+            <div class="breakdown">
+                <div class="breakdown-title">Time allocation — manual vs. automated</div>
+                <div class="bar-row">
+                    <div class="bar-label">Manual work</div>
+                    <div class="bar-track"><div class="bar-fill manual" id="manualBar"></div></div>
+                    <div class="bar-amount" id="manualAmt" style="color:var(--accent3)"></div>
+                </div>
+                <div class="bar-row">
+                    <div class="bar-label">After automation</div>
+                    <div class="bar-track"><div class="bar-fill auto" id="autoBar"></div></div>
+                    <div class="bar-amount" id="autoAmt" style="color:var(--accent2)"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Ready to stop paying for busywork?</h2>
+            <p>ThrottleNet helps businesses like yours automate the repetitive stuff — so your team can focus on what actually matters.</p>
+            <a class="cta-btn" href="https://throttlenet.com" target="_blank">Talk to a ThrottleNet Expert →</a>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    Built live with AI by <span>ThrottleNet</span>
+</footer>
+
+<script>
+    let selectedTask = 'Data Entry';
+
+    function selectTask(btn) {
+        document.querySelectorAll('.task-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedTask = btn.dataset.task;
+        calculate();
+    }
+
+    function updateWage() {
+        const val = document.getElementById('hourlyWage').value;
+        document.getElementById('wageDisplay').textContent = `$${val}/hr`;
+    }
+
+    function formatCurrency(n) {
+        if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000)    return '$' + (n / 1000).toFixed(0) + 'K';
+        return '$' + Math.round(n).toLocaleString();
+    }
+
+    function animateValue(el, target, formatter, duration = 800) {
+        const start = performance.now();
+        const from = parseFloat(el.dataset.current || 0) || 0;
+        el.dataset.current = target;
+
+        function step(now) {
+            const t = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - t, 3); // cubic ease-out
+            const val = from + (target - from) * ease;
+            el.textContent = formatter(val);
+            if (t < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function calculate() {
+        const minutes = parseFloat(document.getElementById('minutesPerTask').value) || 0;
+        const freqPerDay = parseFloat(document.getElementById('frequency').value) || 0;
+        const wage = parseFloat(document.getElementById('hourlyWage').value) || 35;
+
+        const workDaysPerYear = 250;
+        const occurrencesPerYear = freqPerDay * workDaysPerYear;
+        const totalMinutesPerYear = occurrencesPerYear * minutes;
+        const totalHoursPerYear = totalMinutesPerYear / 60;
+        const moneyPerYear = totalHoursPerYear * wage;
+        const daysFree = totalHoursPerYear / 8;
+        const fiveYear = moneyPerYear * 5;
+
+        // After automation: ~5% of original (oversight/maintenance)
+        const autoHours = totalHoursPerYear * 0.05;
+
+        // Show results
+        const resultsEl = document.getElementById('results');
+        resultsEl.classList.add('visible');
+
+        animateValue(document.getElementById('hoursSaved'), totalHoursPerYear,
+            v => Math.round(v).toLocaleString() + ' hrs');
+        animateValue(document.getElementById('moneySaved'), moneyPerYear, formatCurrency);
+        animateValue(document.getElementById('daysSaved'), daysFree,
+            v => Math.round(v).toLocaleString());
+        animateValue(document.getElementById('fiveYear'), fiveYear, formatCurrency);
+
+        // Bars
+        const maxHours = totalHoursPerYear;
+        setTimeout(() => {
+            document.getElementById('manualBar').style.width = '100%';
+            document.getElementById('autoBar').style.width = (autoHours / maxHours * 100) + '%';
+        }, 100);
+
+        document.getElementById('manualAmt').textContent = Math.round(totalHoursPerYear) + ' hrs';
+        document.getElementById('autoAmt').textContent   = Math.round(autoHours) + ' hrs';
+    }
+
+    // Init
+    calculate();
+</script>
+
 </body>
 </html>
