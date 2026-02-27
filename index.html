@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automation Savings Calculator</title>
+    <title>ThrottleNet Automation ROI Calculator</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #f0f2ff;
+            /* ThrottleNet brand colors */
+            --tn-green:  #76ad4d;
+            --tn-blue:   #244c5a;
+            --tn-gold:   #ffb500;
+            --tn-green-light: #eef6e7;
+            --tn-blue-light:  #e6eef1;
+            --tn-gold-light:  #fff8e1;
+
+            --bg:      #f2f5f2;
             --surface: #ffffff;
-            --surface2: #f6f7ff;
-            --border: #e0e3ff;
-            --accent: #5b4fff;
-            --accent2: #00bfa5;
-            --accent3: #ff4d7e;
-            --accent4: #ff9000;
-            --text: #1a1a2e;
-            --muted: #6b6b8a;
-            --glow: rgba(91, 79, 255, 0.25);
-            --glow2: rgba(0, 191, 165, 0.25);
+            --surface2: #f7faf5;
+            --border:  #d8e8d0;
+            --text:    #1a2e24;
+            --muted:   #5a7060;
+            --glow-green: rgba(118, 173, 77, 0.25);
+            --glow-blue:  rgba(36, 76, 90, 0.20);
+            --glow-gold:  rgba(255, 181, 0, 0.30);
         }
 
         body {
@@ -30,38 +35,50 @@
             overflow-x: hidden;
         }
 
-        /* Animated gradient background */
+        /* Subtle dot grid */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background:
-                radial-gradient(ellipse 80% 50% at 10% 10%, rgba(91,79,255,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 90% 80%, rgba(0,191,165,0.10) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,77,126,0.06) 0%, transparent 70%);
+            background-image: radial-gradient(circle, rgba(118,173,77,0.10) 1px, transparent 1px);
+            background-size: 32px 32px;
             pointer-events: none;
             z-index: 0;
-            animation: bgShift 10s ease-in-out infinite alternate;
         }
 
-        @keyframes bgShift {
-            from { opacity: 1; }
-            to   { opacity: 0.7; }
-        }
-
-        /* Dot grid */
+        /* Soft radial glow behind header */
         body::after {
             content: '';
             position: fixed;
-            inset: 0;
-            background-image: radial-gradient(circle, rgba(91,79,255,0.12) 1px, transparent 1px);
-            background-size: 32px 32px;
+            top: -120px; left: 50%;
+            transform: translateX(-50%);
+            width: 900px; height: 500px;
+            background: radial-gradient(ellipse, rgba(118,173,77,0.10) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
 
         .noise { display: none; }
 
+        /* Floating orbs - TN colors */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(70px);
+            pointer-events: none;
+            z-index: 0;
+            animation: drift 16s ease-in-out infinite alternate;
+        }
+        .orb1 { width: 480px; height: 480px; background: rgba(118,173,77,0.10); top: -140px; right: -120px; animation-delay: 0s; }
+        .orb2 { width: 360px; height: 360px; background: rgba(36,76,90,0.08);  bottom: 60px;  left: -80px;  animation-delay: -6s; }
+        .orb3 { width: 260px; height: 260px; background: rgba(255,181,0,0.07); top: 45%;      left: 65%;    animation-delay: -3s; }
+
+        @keyframes drift {
+            from { transform: translate(0, 0); }
+            to   { transform: translate(35px, 45px); }
+        }
+
+        /* ── Layout ── */
         .container {
             position: relative;
             z-index: 1;
@@ -70,101 +87,124 @@
             padding: 40px 24px 80px;
         }
 
-        /* Header */
+        /* ── Header / Branding ── */
         header {
             text-align: center;
             margin-bottom: 52px;
         }
 
-        .badge {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 100px;
-            padding: 7px 20px;
-            font-size: 12px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #fff;
-            font-weight: 700;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 16px var(--glow);
-            animation: pulse-badge 3s ease-in-out infinite;
+        .tn-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 22px;
         }
 
-        @keyframes pulse-badge {
-            0%, 100% { box-shadow: 0 4px 16px var(--glow); }
-            50%       { box-shadow: 0 4px 32px rgba(91,79,255,0.5), 0 0 0 6px rgba(91,79,255,0.08); }
+        .tn-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px var(--glow-green);
+        }
+
+        .tn-brand-text {
+            text-align: left;
+        }
+
+        .tn-name {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--tn-blue);
+            line-height: 1;
+            letter-spacing: -0.3px;
+        }
+
+        .tn-name span {
+            color: var(--tn-green);
+        }
+
+        .tn-tagline {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+
+        .tool-label {
+            display: inline-block;
+            background: var(--tn-blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 6px 18px;
+            border-radius: 100px;
+            margin-bottom: 16px;
+            box-shadow: 0 3px 12px var(--glow-blue);
         }
 
         h1 {
-            font-size: clamp(28px, 5vw, 54px);
+            font-size: clamp(26px, 4.5vw, 50px);
             font-weight: 900;
             line-height: 1.1;
-            background: linear-gradient(135deg, #2d1fff 0%, #9c27b0 40%, #ff4d7e 70%, #ff9000 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--tn-blue);
             margin-bottom: 14px;
-            animation: shimmerText 4s linear infinite;
         }
 
-        @keyframes shimmerText {
-            0%   { background-position: 0% center; }
-            100% { background-position: 200% center; }
+        h1 em {
+            font-style: normal;
+            color: var(--tn-green);
         }
 
         .subtitle {
             color: var(--muted);
             font-size: 16px;
-            max-width: 480px;
+            max-width: 500px;
             margin: 0 auto;
-            line-height: 1.6;
+            line-height: 1.65;
         }
 
-        /* Card */
+        /* ── Cards ── */
         .card {
             background: var(--surface);
             border: 1.5px solid var(--border);
-            border-radius: 24px;
+            border-radius: 20px;
             padding: 36px;
             margin-bottom: 24px;
             position: relative;
             overflow: hidden;
             transition: transform 0.25s, box-shadow 0.25s;
-            box-shadow: 0 4px 24px rgba(91,79,255,0.07), 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(36,76,90,0.06), 0 1px 3px rgba(0,0,0,0.04);
         }
 
+        /* TN green accent bar on top of cards */
         .card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 3px;
-            background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent4));
-            background-size: 300% 100%;
-            animation: rainbowBar 4s linear infinite;
-        }
-
-        @keyframes rainbowBar {
-            0%   { background-position: 0% 0%; }
-            100% { background-position: 300% 0%; }
+            background: linear-gradient(90deg, var(--tn-green), var(--tn-gold));
         }
 
         .card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(91,79,255,0.14), 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 12px 36px rgba(36,76,90,0.10), 0 2px 6px rgba(0,0,0,0.05);
         }
 
         .card-title {
-            font-size: 13px;
-            letter-spacing: 1.5px;
+            font-size: 12px;
+            letter-spacing: 2px;
             text-transform: uppercase;
             font-weight: 700;
-            color: var(--accent);
+            color: var(--tn-green);
             margin-bottom: 24px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .card-title::after {
@@ -175,7 +215,7 @@
             border-radius: 2px;
         }
 
-        /* Task selector */
+        /* ── Task buttons ── */
         .task-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -197,31 +237,32 @@
         }
 
         .task-btn .icon {
-            font-size: 30px;
+            font-size: 28px;
             display: block;
             margin-bottom: 6px;
             transition: transform 0.2s;
         }
 
         .task-btn:hover {
-            border-color: var(--accent);
-            background: rgba(91,79,255,0.06);
+            border-color: var(--tn-green);
+            background: var(--tn-green-light);
             transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(91,79,255,0.15);
+            box-shadow: 0 6px 20px var(--glow-green);
         }
 
-        .task-btn:hover .icon { transform: scale(1.2) rotate(-5deg); }
+        .task-btn:hover .icon { transform: scale(1.15) rotate(-5deg); }
 
         .task-btn.active {
-            border-color: var(--accent);
-            background: linear-gradient(135deg, rgba(91,79,255,0.1), rgba(0,191,165,0.08));
-            box-shadow: 0 6px 24px var(--glow);
+            border-color: var(--tn-green);
+            background: var(--tn-green-light);
+            box-shadow: 0 6px 20px var(--glow-green);
             transform: translateY(-3px);
+            color: var(--tn-blue);
         }
 
-        .task-btn.active .icon { transform: scale(1.15); }
+        .task-btn.active .icon { transform: scale(1.1); }
 
-        /* Inputs */
+        /* ── Inputs ── */
         .input-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -242,15 +283,13 @@
             font-weight: 600;
         }
 
-        .input-wrap {
-            position: relative;
-        }
+        .input-wrap { position: relative; }
 
         input[type="number"], select {
             width: 100%;
             background: var(--surface2);
             border: 1.5px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 12px 16px;
             color: var(--text);
             font-size: 16px;
@@ -262,8 +301,8 @@
 
         input[type="number"]:focus, select:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(91,79,255,0.12);
+            border-color: var(--tn-green);
+            box-shadow: 0 0 0 4px rgba(118,173,77,0.15);
         }
 
         .unit {
@@ -276,24 +315,13 @@
             pointer-events: none;
         }
 
-        /* Slider */
-        .slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        /* ── Slider ── */
+        .slider-group { display: flex; flex-direction: column; gap: 8px; }
 
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .slider-label { display: flex; justify-content: space-between; align-items: center; }
 
         .slider-val {
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--tn-green);
             font-weight: 800;
             font-size: 18px;
         }
@@ -302,39 +330,36 @@
             width: 100%;
             height: 8px;
             -webkit-appearance: none;
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            background: linear-gradient(90deg, var(--tn-green), var(--tn-gold));
             border-radius: 100px;
             cursor: pointer;
         }
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             background: #fff;
-            border: 3px solid var(--accent);
-            box-shadow: 0 2px 12px var(--glow);
+            border: 3px solid var(--tn-green);
+            box-shadow: 0 2px 10px var(--glow-green);
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.25);
-            box-shadow: 0 4px 20px var(--glow);
+            transform: scale(1.2);
+            box-shadow: 0 4px 18px var(--glow-green);
         }
 
-        /* Results */
+        /* ── Results ── */
         #results {
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s, transform 0.5s;
         }
 
-        #results.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        #results.visible { opacity: 1; transform: translateY(0); }
 
         .results-grid {
             display: grid;
@@ -344,38 +369,50 @@
         }
 
         .stat-card {
-            border-radius: 18px;
+            border-radius: 16px;
             padding: 24px 20px;
             text-align: center;
             position: relative;
             overflow: hidden;
             transition: transform 0.3s, box-shadow 0.3s;
-            border: none;
+            border: 1.5px solid transparent;
         }
 
-        .stat-card.time  { background: linear-gradient(135deg, #ede9ff, #d4cfff); }
-        .stat-card.money { background: linear-gradient(135deg, #d4f8f2, #a8f0e6); }
-        .stat-card.days  { background: linear-gradient(135deg, #ffe5ed, #ffc2d4); }
-        .stat-card.roi   { background: linear-gradient(135deg, #fff8d4, #ffe89a); }
+        .stat-card.time  {
+            background: var(--tn-green-light);
+            border-color: rgba(118,173,77,0.25);
+        }
+        .stat-card.money {
+            background: var(--tn-blue-light);
+            border-color: rgba(36,76,90,0.18);
+        }
+        .stat-card.days  {
+            background: var(--tn-gold-light);
+            border-color: rgba(255,181,0,0.30);
+        }
+        .stat-card.roi   {
+            background: linear-gradient(135deg, #eef6e7, #e6eef1);
+            border-color: rgba(118,173,77,0.20);
+        }
 
         .stat-card:hover {
             transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 14px 36px rgba(36,76,90,0.12);
         }
 
-        .stat-card::before {
+        /* Decorative circle in corner */
+        .stat-card::after {
             content: '';
             position: absolute;
-            top: -40px; right: -40px;
-            width: 120px; height: 120px;
+            top: -30px; right: -30px;
+            width: 100px; height: 100px;
             border-radius: 50%;
-            opacity: 0.15;
+            opacity: 0.12;
         }
-
-        .stat-card.time::before  { background: var(--accent); }
-        .stat-card.money::before { background: var(--accent2); }
-        .stat-card.days::before  { background: var(--accent3); }
-        .stat-card.roi::before   { background: var(--accent4); }
+        .stat-card.time::after  { background: var(--tn-green); }
+        .stat-card.money::after { background: var(--tn-blue); }
+        .stat-card.days::after  { background: var(--tn-gold); }
+        .stat-card.roi::after   { background: var(--tn-green); }
 
         .stat-label {
             font-size: 11px;
@@ -385,10 +422,10 @@
             margin-bottom: 10px;
         }
 
-        .stat-card.time .stat-label  { color: var(--accent); }
-        .stat-card.money .stat-label { color: #00897b; }
-        .stat-card.days .stat-label  { color: var(--accent3); }
-        .stat-card.roi .stat-label   { color: #e65100; }
+        .stat-card.time .stat-label  { color: var(--tn-green); }
+        .stat-card.money .stat-label { color: var(--tn-blue); }
+        .stat-card.days .stat-label  { color: #c68a00; }
+        .stat-card.roi .stat-label   { color: var(--tn-green); }
 
         .stat-value {
             font-size: clamp(26px, 4vw, 38px);
@@ -397,36 +434,45 @@
             margin-bottom: 4px;
         }
 
-        .stat-card.time .stat-value  { color: var(--accent); }
-        .stat-card.money .stat-value { color: #00897b; }
-        .stat-card.days .stat-value  { color: var(--accent3); }
-        .stat-card.roi .stat-value   { color: #e65100; }
+        .stat-card.time .stat-value  { color: var(--tn-green); }
+        .stat-card.money .stat-value { color: var(--tn-blue); }
+        .stat-card.days .stat-value  { color: #c68a00; }
+        .stat-card.roi .stat-value   { color: var(--tn-blue); }
 
         .stat-sub {
             font-size: 12px;
-            opacity: 0.65;
+            opacity: 0.60;
             font-weight: 500;
+            color: var(--text);
         }
 
-        .stat-card.time .stat-sub  { color: var(--accent); }
-        .stat-card.money .stat-sub { color: #00897b; }
-        .stat-card.days .stat-sub  { color: var(--accent3); }
-        .stat-card.roi .stat-sub   { color: #e65100; }
+        /* ── Pop-in animation for result cards ── */
+        @keyframes popIn {
+            0%   { opacity: 0; transform: scale(0.75) translateY(12px); }
+            70%  { transform: scale(1.04) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
 
-        /* Progress bar */
+        #results.visible .stat-card { animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        #results.visible .stat-card:nth-child(1) { animation-delay: 0.00s; }
+        #results.visible .stat-card:nth-child(2) { animation-delay: 0.08s; }
+        #results.visible .stat-card:nth-child(3) { animation-delay: 0.16s; }
+        #results.visible .stat-card:nth-child(4) { animation-delay: 0.24s; }
+
+        /* ── Progress bars ── */
         .breakdown {
             background: var(--surface2);
             border: 1.5px solid var(--border);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 24px;
         }
 
         .breakdown-title {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--muted);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             font-weight: 700;
         }
 
@@ -453,38 +499,33 @@
             border-radius: 100px;
             width: 0;
             transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
         }
 
-        .bar-fill.manual {
-            background: linear-gradient(90deg, var(--accent3), #ff9a8b);
-            box-shadow: 0 0 8px rgba(255,77,126,0.4);
-        }
-
-        .bar-fill.auto {
-            background: linear-gradient(90deg, var(--accent2), #00e5c9);
-            box-shadow: 0 0 8px rgba(0,191,165,0.4);
-        }
+        .bar-fill.manual { background: linear-gradient(90deg, #e05c3a, #f4986a); }
+        .bar-fill.auto   { background: linear-gradient(90deg, var(--tn-green), #a8d97a); }
 
         .bar-amount { width: 80px; text-align: right; font-weight: 700; color: var(--text); }
 
-        /* CTA */
+        /* ── CTA ── */
         .cta-section {
             text-align: center;
             margin-top: 32px;
-            padding: 40px 32px;
-            background: linear-gradient(135deg, #5b4fff, #9c27b0, #ff4d7e);
-            background-size: 200% 200%;
-            animation: gradientShift 6s ease infinite;
-            border-radius: 24px;
+            padding: 44px 32px;
+            background: var(--tn-blue);
+            border-radius: 20px;
             color: #fff;
-            box-shadow: 0 12px 40px rgba(91,79,255,0.3);
+            box-shadow: 0 12px 40px var(--glow-blue);
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes gradientShift {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        /* Gold accent stripe */
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--tn-green), var(--tn-gold));
         }
 
         .cta-section h2 {
@@ -495,32 +536,36 @@
         }
 
         .cta-section p {
-            color: rgba(255,255,255,0.85);
+            color: rgba(255,255,255,0.80);
             font-size: 15px;
-            margin-bottom: 24px;
+            margin-bottom: 26px;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .cta-btn {
             display: inline-block;
-            background: #fff;
-            color: var(--accent);
+            background: var(--tn-green);
+            color: #fff;
             font-weight: 800;
             font-size: 15px;
-            padding: 16px 40px;
+            padding: 15px 40px;
             border-radius: 100px;
             text-decoration: none;
             border: none;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            box-shadow: 0 4px 20px rgba(118,173,77,0.40);
         }
 
         .cta-btn:hover {
-            transform: translateY(-3px) scale(1.04);
-            box-shadow: 0 10px 36px rgba(0,0,0,0.25);
+            background: #88c257;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 10px 32px rgba(118,173,77,0.50);
         }
 
-        /* Footer */
+        /* ── Footer ── */
         footer {
             text-align: center;
             padding: 32px 0 24px;
@@ -531,45 +576,7 @@
             font-weight: 500;
         }
 
-        footer span {
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 800;
-        }
-
-        /* Floating orbs */
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(60px);
-            pointer-events: none;
-            z-index: 0;
-            animation: drift 14s ease-in-out infinite alternate;
-        }
-
-        .orb1 { width: 500px; height: 500px; background: rgba(91,79,255,0.12); top: -150px; right: -120px; animation-delay: 0s; }
-        .orb2 { width: 380px; height: 380px; background: rgba(0,191,165,0.10); bottom: 50px; left: -100px; animation-delay: -5s; }
-        .orb3 { width: 280px; height: 280px; background: rgba(255,77,126,0.08); top: 40%; left: 60%; animation-delay: -2s; }
-
-        @keyframes drift {
-            from { transform: translate(0, 0) scale(1); }
-            to   { transform: translate(40px, 50px) scale(1.05); }
-        }
-
-        /* Sparkle effect on results */
-        @keyframes popIn {
-            0%   { opacity: 0; transform: scale(0.7) translateY(15px); }
-            70%  { transform: scale(1.05) translateY(-3px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        #results.visible .stat-card { animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        #results.visible .stat-card:nth-child(1) { animation-delay: 0.0s; }
-        #results.visible .stat-card:nth-child(2) { animation-delay: 0.1s; }
-        #results.visible .stat-card:nth-child(3) { animation-delay: 0.2s; }
-        #results.visible .stat-card:nth-child(4) { animation-delay: 0.3s; }
+        footer strong { color: var(--tn-blue); font-weight: 800; }
 
         select option { background: #fff; color: var(--text); }
     </style>
@@ -584,8 +591,20 @@
 <div class="container">
 
     <header>
-        <div class="badge">⚡ ROI Calculator</div>
-        <h1>How Much Is Manual<br>Work Costing You?</h1>
+        <!-- TN Branding -->
+        <div class="tn-brand">
+            <img class="tn-logo"
+                 src="https://www.throttlenet.com/wp-content/uploads/2025/03/TN-LOGO-ICON-180x180-1.png"
+                 alt="ThrottleNet Logo">
+            <div class="tn-brand-text">
+                <div class="tn-name">Throttle<span>Net</span></div>
+                <div class="tn-tagline">Managed IT Services</div>
+            </div>
+        </div>
+
+        <div class="tool-label">Automation ROI Calculator</div>
+
+        <h1>How Much Is Manual<br><em>Work Costing You?</em></h1>
         <p class="subtitle">Pick a task, set the numbers, and see exactly how much time and money automation saves your business every year.</p>
     </header>
 
@@ -653,7 +672,7 @@
                 <span class="slider-val" id="wageDisplay">$35/hr</span>
             </div>
             <input type="range" id="hourlyWage" min="15" max="150" value="35" step="5" oninput="updateWage(); calculate()">
-            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted);">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px;">
                 <span>$15/hr</span><span>$150/hr</span>
             </div>
         </div>
@@ -692,12 +711,12 @@
                 <div class="bar-row">
                     <div class="bar-label">Manual work</div>
                     <div class="bar-track"><div class="bar-fill manual" id="manualBar"></div></div>
-                    <div class="bar-amount" id="manualAmt" style="color:var(--accent3)"></div>
+                    <div class="bar-amount" id="manualAmt" style="color:#e05c3a"></div>
                 </div>
                 <div class="bar-row">
                     <div class="bar-label">After automation</div>
                     <div class="bar-track"><div class="bar-fill auto" id="autoBar"></div></div>
-                    <div class="bar-amount" id="autoAmt" style="color:var(--accent2)"></div>
+                    <div class="bar-amount" id="autoAmt" style="color:var(--tn-green)"></div>
                 </div>
             </div>
         </div>
@@ -712,7 +731,7 @@
 </div>
 
 <footer>
-    Built live with AI by <span>ThrottleNet</span>
+    Built live with AI by <strong>ThrottleNet</strong>
 </footer>
 
 <script>
@@ -743,7 +762,7 @@
 
         function step(now) {
             const t = Math.min((now - start) / duration, 1);
-            const ease = 1 - Math.pow(1 - t, 3); // cubic ease-out
+            const ease = 1 - Math.pow(1 - t, 3);
             const val = from + (target - from) * ease;
             el.textContent = formatter(val);
             if (t < 1) requestAnimationFrame(step);
@@ -752,44 +771,37 @@
     }
 
     function calculate() {
-        const minutes = parseFloat(document.getElementById('minutesPerTask').value) || 0;
+        const minutes    = parseFloat(document.getElementById('minutesPerTask').value) || 0;
         const freqPerDay = parseFloat(document.getElementById('frequency').value) || 0;
-        const wage = parseFloat(document.getElementById('hourlyWage').value) || 35;
+        const wage       = parseFloat(document.getElementById('hourlyWage').value) || 35;
 
-        const workDaysPerYear = 250;
-        const occurrencesPerYear = freqPerDay * workDaysPerYear;
-        const totalMinutesPerYear = occurrencesPerYear * minutes;
-        const totalHoursPerYear = totalMinutesPerYear / 60;
-        const moneyPerYear = totalHoursPerYear * wage;
-        const daysFree = totalHoursPerYear / 8;
-        const fiveYear = moneyPerYear * 5;
+        const workDaysPerYear      = 250;
+        const occurrencesPerYear   = freqPerDay * workDaysPerYear;
+        const totalMinutesPerYear  = occurrencesPerYear * minutes;
+        const totalHoursPerYear    = totalMinutesPerYear / 60;
+        const moneyPerYear         = totalHoursPerYear * wage;
+        const daysFree             = totalHoursPerYear / 8;
+        const fiveYear             = moneyPerYear * 5;
+        const autoHours            = totalHoursPerYear * 0.05;
 
-        // After automation: ~5% of original (oversight/maintenance)
-        const autoHours = totalHoursPerYear * 0.05;
-
-        // Show results
-        const resultsEl = document.getElementById('results');
-        resultsEl.classList.add('visible');
+        document.getElementById('results').classList.add('visible');
 
         animateValue(document.getElementById('hoursSaved'), totalHoursPerYear,
             v => Math.round(v).toLocaleString() + ' hrs');
         animateValue(document.getElementById('moneySaved'), moneyPerYear, formatCurrency);
-        animateValue(document.getElementById('daysSaved'), daysFree,
+        animateValue(document.getElementById('daysSaved'),  daysFree,
             v => Math.round(v).toLocaleString());
-        animateValue(document.getElementById('fiveYear'), fiveYear, formatCurrency);
+        animateValue(document.getElementById('fiveYear'),   fiveYear, formatCurrency);
 
-        // Bars
-        const maxHours = totalHoursPerYear;
         setTimeout(() => {
             document.getElementById('manualBar').style.width = '100%';
-            document.getElementById('autoBar').style.width = (autoHours / maxHours * 100) + '%';
+            document.getElementById('autoBar').style.width   = (autoHours / totalHoursPerYear * 100) + '%';
         }, 100);
 
         document.getElementById('manualAmt').textContent = Math.round(totalHoursPerYear) + ' hrs';
         document.getElementById('autoAmt').textContent   = Math.round(autoHours) + ' hrs';
     }
 
-    // Init
     calculate();
 </script>
 
