@@ -652,16 +652,20 @@
             </div>
             <div class="input-group">
                 <label>How often is it done?</label>
+                <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                    <label style="display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;">
+                        <input type="radio" name="freqUnit" value="daily" onchange="calculate()" style="accent-color:var(--tn-green);width:16px;height:16px;"> Daily
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;">
+                        <input type="radio" name="freqUnit" value="weekly" checked onchange="calculate()" style="accent-color:var(--tn-green);width:16px;height:16px;"> Weekly
+                    </label>
+                    <label style="display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;">
+                        <input type="radio" name="freqUnit" value="monthly" onchange="calculate()" style="accent-color:var(--tn-green);width:16px;height:16px;"> Monthly
+                    </label>
+                </div>
                 <div class="input-wrap">
-                    <select id="frequency" onchange="calculate()">
-                        <option value="1">Once a day</option>
-                        <option value="5" selected>5× per week</option>
-                        <option value="10">Twice a day (Mon–Fri)</option>
-                        <option value="20">Multiple times daily</option>
-                        <option value="0.5">A few times a week</option>
-                        <option value="0.14">About once a week</option>
-                        <option value="0.033">A few times a month</option>
-                    </select>
+                    <input type="number" id="freqCount" value="5" min="1" max="999" oninput="calculate()">
+                    <span class="unit" id="freqUnitLabel">× / week</span>
                 </div>
             </div>
         </div>
@@ -771,12 +775,20 @@
     }
 
     function calculate() {
-        const minutes    = parseFloat(document.getElementById('minutesPerTask').value) || 0;
-        const freqPerDay = parseFloat(document.getElementById('frequency').value) || 0;
-        const wage       = parseFloat(document.getElementById('hourlyWage').value) || 35;
+        const minutes  = parseFloat(document.getElementById('minutesPerTask').value) || 0;
+        const freqCount = parseFloat(document.getElementById('freqCount').value) || 0;
+        const wage     = parseFloat(document.getElementById('hourlyWage').value) || 35;
 
-        const workDaysPerYear      = 250;
-        const occurrencesPerYear   = freqPerDay * workDaysPerYear;
+        const freqUnit = document.querySelector('input[name="freqUnit"]:checked')?.value || 'weekly';
+        const unitLabel = document.getElementById('freqUnitLabel');
+        if (freqUnit === 'daily')   { unitLabel.textContent = '× / day'; }
+        else if (freqUnit === 'weekly')  { unitLabel.textContent = '× / week'; }
+        else                        { unitLabel.textContent = '× / month'; }
+
+        const multiplier = freqUnit === 'daily' ? 250
+                         : freqUnit === 'weekly' ? 52
+                         : 12;
+        const occurrencesPerYear   = freqCount * multiplier;
         const totalMinutesPerYear  = occurrencesPerYear * minutes;
         const totalHoursPerYear    = totalMinutesPerYear / 60;
         const moneyPerYear         = totalHoursPerYear * wage;
