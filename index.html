@@ -363,9 +363,22 @@
 
         .results-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-bottom: 28px;
+        }
+
+        @media (max-width: 600px) { .results-grid { grid-template-columns: 1fr; } }
+
+        .row-label {
+            grid-column: 1 / -1;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: -4px;
+            padding-left: 4px;
         }
 
         .stat-card {
@@ -455,10 +468,14 @@
 
         #results.visible .stat-card { animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         #results.visible .stat-card:nth-child(1) { animation-delay: 0.00s; }
-        #results.visible .stat-card:nth-child(2) { animation-delay: 0.08s; }
-        #results.visible .stat-card:nth-child(3) { animation-delay: 0.16s; }
-        #results.visible .stat-card:nth-child(4) { animation-delay: 0.24s; }
-        #results.visible .stat-card:nth-child(5) { animation-delay: 0.32s; }
+        #results.visible .stat-card:nth-child(2) { animation-delay: 0.07s; }
+        #results.visible .stat-card:nth-child(3) { animation-delay: 0.14s; }
+        #results.visible .stat-card:nth-child(4) { animation-delay: 0.21s; }
+        #results.visible .stat-card:nth-child(5) { animation-delay: 0.28s; }
+        #results.visible .stat-card:nth-child(6) { animation-delay: 0.35s; }
+        #results.visible .stat-card:nth-child(7) { animation-delay: 0.42s; }
+        #results.visible .stat-card:nth-child(8) { animation-delay: 0.49s; }
+        #results.visible .stat-card:nth-child(9) { animation-delay: 0.56s; }
 
         /* ── Progress bars ── */
         .breakdown {
@@ -689,29 +706,57 @@
             <div class="card-title">03 — Your savings</div>
 
             <div class="results-grid">
+                <!-- Row 1: Monthly -->
+                <div class="row-label">Monthly</div>
                 <div class="stat-card time">
-                    <div class="stat-label">Hours saved / year</div>
-                    <div class="stat-value" id="hoursSaved">—</div>
-                    <div class="stat-sub">hours reclaimed</div>
+                    <div class="stat-label">Hours saved</div>
+                    <div class="stat-value" id="hoursMonth">—</div>
+                    <div class="stat-sub">per month</div>
                 </div>
                 <div class="stat-card money">
-                    <div class="stat-label">Money saved / month</div>
+                    <div class="stat-label">Money saved</div>
                     <div class="stat-value" id="moneySavedMonth">—</div>
-                    <div class="stat-sub">in labor cost</div>
-                </div>
-                <div class="stat-card money">
-                    <div class="stat-label">Money saved / year</div>
-                    <div class="stat-value" id="moneySaved">—</div>
-                    <div class="stat-sub">in labor cost</div>
+                    <div class="stat-sub">per month</div>
                 </div>
                 <div class="stat-card days">
-                    <div class="stat-label">Work days freed up</div>
+                    <div class="stat-label">Work days freed</div>
+                    <div class="stat-value" id="daysMonth">—</div>
+                    <div class="stat-sub">per month</div>
+                </div>
+
+                <!-- Row 2: Yearly -->
+                <div class="row-label">Yearly</div>
+                <div class="stat-card time">
+                    <div class="stat-label">Hours saved</div>
+                    <div class="stat-value" id="hoursSaved">—</div>
+                    <div class="stat-sub">per year</div>
+                </div>
+                <div class="stat-card money">
+                    <div class="stat-label">Money saved</div>
+                    <div class="stat-value" id="moneySaved">—</div>
+                    <div class="stat-sub">per year</div>
+                </div>
+                <div class="stat-card days">
+                    <div class="stat-label">Work days freed</div>
                     <div class="stat-value" id="daysSaved">—</div>
-                    <div class="stat-sub">8-hour work days</div>
+                    <div class="stat-sub">per year</div>
+                </div>
+
+                <!-- Row 3: Multi-year -->
+                <div class="row-label">Long-term value</div>
+                <div class="stat-card roi">
+                    <div class="stat-label">3-Year value</div>
+                    <div class="stat-value" id="threeYear">—</div>
+                    <div class="stat-sub">cumulative savings</div>
                 </div>
                 <div class="stat-card roi">
                     <div class="stat-label">5-Year value</div>
                     <div class="stat-value" id="fiveYear">—</div>
+                    <div class="stat-sub">cumulative savings</div>
+                </div>
+                <div class="stat-card roi">
+                    <div class="stat-label">7-Year value</div>
+                    <div class="stat-value" id="sevenYear">—</div>
                     <div class="stat-sub">cumulative savings</div>
                 </div>
             </div>
@@ -798,19 +843,26 @@
         const totalMinutesPerYear  = occurrencesPerYear * minutes;
         const totalHoursPerYear    = totalMinutesPerYear / 60;
         const moneyPerYear         = totalHoursPerYear * wage;
+        const moneyPerMonth        = moneyPerYear / 12;
+        const hoursPerMonth        = totalHoursPerYear / 12;
+        const daysPerMonth         = hoursPerMonth / 8;
         const daysFree             = totalHoursPerYear / 8;
-        const fiveYear             = moneyPerYear * 5;
         const autoHours            = totalHoursPerYear * 0.05;
 
         document.getElementById('results').classList.add('visible');
 
-        animateValue(document.getElementById('hoursSaved'), totalHoursPerYear,
-            v => Math.round(v).toLocaleString() + ' hrs');
-        animateValue(document.getElementById('moneySavedMonth'), moneyPerYear / 12, formatCurrency);
-        animateValue(document.getElementById('moneySaved'), moneyPerYear, formatCurrency);
-        animateValue(document.getElementById('daysSaved'),  daysFree,
-            v => Math.round(v).toLocaleString());
-        animateValue(document.getElementById('fiveYear'),   fiveYear, formatCurrency);
+        const hrs  = v => Math.round(v * 10) / 10 + ' hrs';
+        const days = v => (Math.round(v * 10) / 10).toLocaleString();
+
+        animateValue(document.getElementById('hoursMonth'),      hoursPerMonth,       hrs);
+        animateValue(document.getElementById('moneySavedMonth'), moneyPerMonth,       formatCurrency);
+        animateValue(document.getElementById('daysMonth'),       daysPerMonth,        days);
+        animateValue(document.getElementById('hoursSaved'),      totalHoursPerYear,   hrs);
+        animateValue(document.getElementById('moneySaved'),      moneyPerYear,        formatCurrency);
+        animateValue(document.getElementById('daysSaved'),       daysFree,            days);
+        animateValue(document.getElementById('threeYear'),       moneyPerYear * 3,    formatCurrency);
+        animateValue(document.getElementById('fiveYear'),        moneyPerYear * 5,    formatCurrency);
+        animateValue(document.getElementById('sevenYear'),       moneyPerYear * 7,    formatCurrency);
 
         setTimeout(() => {
             document.getElementById('manualBar').style.width = '100%';
