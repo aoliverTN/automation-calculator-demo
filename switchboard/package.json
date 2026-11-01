@@ -1,0 +1,16 @@
+{
+  "name": "switchboard",
+  "version": "0.1.0",
+  "description": "One hub for all your AI agents: Claude Code, Codex, Gemini, Copilot, Grok, ChatGPT. Queue from GitHub, review, test, notify.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "bin": { "switchboard": "src/server.js" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "optionalDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

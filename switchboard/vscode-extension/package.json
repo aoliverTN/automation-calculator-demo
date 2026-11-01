@@ -1,0 +1,27 @@
+{
+  "name": "switchboard-vscode",
+  "displayName": "Switchboard",
+  "description": "See and drive all your AI agents (Claude Code, Codex, Gemini, Copilot, Grok) from VS Code, with notifications when they finish.",
+  "version": "0.1.0",
+  "publisher": "throttlenet",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "switchboard.open", "title": "Switchboard: Open Dashboard" },
+      { "command": "switchboard.command", "title": "Switchboard: Tell an Agent…" },
+      { "command": "switchboard.queueSelection", "title": "Switchboard: Queue Task (from selection)" },
+      { "command": "switchboard.status", "title": "Switchboard: Status" }
+    ],
+    "keybindings": [{ "command": "switchboard.command", "key": "ctrl+alt+s", "mac": "cmd+alt+s" }],
+    "configuration": {
+      "title": "Switchboard",
+      "properties": {
+        "switchboard.url": { "type": "string", "default": "http://localhost:7777", "description": "Address of your Switchboard hub (e.g. http://devbox:7777 or its Tailscale name)." },
+        "switchboard.token": { "type": "string", "default": "", "description": "Access token (SWITCHBOARD_TOKEN on the hub)." }
+      }
+    }
+  }
+}

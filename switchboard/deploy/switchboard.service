@@ -1,0 +1,18 @@
+# systemd unit for the Linux box. Installed by deploy/install-linux.sh.
+[Unit]
+Description=Switchboard AI agent hub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/switchboard
+EnvironmentFile=/etc/switchboard.env
+Environment=SWITCHBOARD_CONFIG=/etc/switchboard.config.json
+ExecStart=/usr/bin/env node /opt/switchboard/src/server.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

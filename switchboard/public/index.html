@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switchboard</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1115">
+<style>
+  :root {
+    --bg: #0f1115; --panel: #161a21; --panel2: #1c212a; --line: #2a303b; --text: #e6e8ec; --muted: #8b93a1;
+    --accent: #e8542e; --ok: #3fb950; --warn: #d29922; --err: #f85149; --run: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; gap: 10px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 5; }
+  header h1 { font-size: 16px; margin: 0; white-space: nowrap; }
+  header h1 span { color: var(--accent); }
+  .cmd { flex: 1; display: flex; gap: 6px; min-width: 0; }
+  input, textarea, select { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; min-width: 0; }
+  textarea { width: 100%; resize: vertical; min-height: 60px; }
+  .cmd input { flex: 1; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.mic.listening { background: var(--err); border-color: var(--err); color: #fff; }
+  main { display: grid; grid-template-columns: 300px 340px 1fr; height: calc(100vh - 57px); }
+  section { border-right: 1px solid var(--line); overflow: auto; padding: 12px; }
+  section:last-child { border-right: 0; display: flex; flex-direction: column; padding: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 8px; display: flex; justify-content: space-between; align-items: center; }
+  h2:first-child { margin-top: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+  .card.click { cursor: pointer; }
+  .card.click:hover, .card.sel { border-color: var(--accent); }
+  .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; background: var(--muted); flex: none; }
+  .dot.running { background: var(--run); box-shadow: 0 0 0 3px #58a6ff33; }
+  .dot.done { background: var(--ok); } .dot.error { background: var(--err); } .dot.interrupted { background: var(--warn); }
+  .pill { font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+  .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .last { color: var(--muted); font-size: 12px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  #detailHead { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  #log { flex: 1; overflow: auto; padding: 12px 16px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .entry { white-space: pre-wrap; word-break: break-word; margin-bottom: 6px; }
+  .entry.user { color: #fff; background: #e8542e22; border-left: 3px solid var(--accent); padding: 6px 10px; border-radius: 4px; margin: 12px 0 8px; font-family: system-ui, sans-serif; }
+  .entry.stderr { color: var(--muted); } .entry.error { color: var(--err); }
+  #composer { border-top: 1px solid var(--line); padding: 10px 16px; display: flex; gap: 8px; align-items: flex-end; }
+  #composer textarea { min-height: 44px; max-height: 200px; }
+  .new { display: grid; gap: 6px; }
+  .toast { position: fixed; right: 16px; bottom: 16px; background: var(--panel2); border: 1px solid var(--line); padding: 10px 14px; border-radius: 10px; max-width: 360px; white-space: pre-wrap; z-index: 9; }
+  a { color: var(--run); }
+  .empty { color: var(--muted); text-align: center; margin: 40px 0; }
+  @media (max-width: 1000px) {
+    main { grid-template-columns: 1fr; height: auto; }
+    section { border-right: 0; border-bottom: 1px solid var(--line); max-height: none; }
+    section:last-child { min-height: 70vh; }
+    header { flex-wrap: wrap; }
+    .cmd { order: 3; flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Switch<span>board</span></h1>
+  <form class="cmd" id="cmdForm">
+    <input id="cmd" autocomplete="off" placeholder='Say or type: "tell claude to …", "queue fix the login bug", "status"'>
+    <button type="button" class="mic" id="cmdMic" title="Speak a command">🎤</button>
+    <button class="primary">Go</button>
+  </form>
+  <button id="notifBtn" title="Desktop notifications">🔔</button>
+  <button id="tokenBtn" title="Access token">🔑</button>
+</header>
+<main>
+  <section>
+    <h2>Agents</h2>
+    <div id="agents"></div>
+    <h2>Queue <span><label class="muted"><input type="checkbox" id="queueOn"> auto-run</label></span></h2>
+    <div id="queue"></div>
+    <form class="card new" id="queueForm">
+      <input id="qTitle" placeholder="Add a task to the queue…">
+      <div class="row"><select id="qRepo"></select><select id="qAgent"><option value="">any coder</option></select></div>
+      <button>Queue it</button>
+    </form>
+    <h2>Activity</h2>
+    <div id="activity"></div>
+  </section>
+  <section>
+    <h2>New session</h2>
+    <form class="card new" id="newForm">
+      <select id="newAgent"></select>
+      <input id="newCwd" placeholder="Working folder (optional, for coding agents)">
+      <textarea id="newPrompt" placeholder="What should it do?"></textarea>
+      <button class="primary">Start</button>
+    </form>
+    <h2>Sessions <select id="filter"><option value="">all</option><option value="running">working</option><option value="issue">from queue</option></select></h2>
+    <div id="sessions"></div>
+  </section>
+  <section>
+    <div id="detailHead"><div class="empty" style="margin:0">Pick a session</div></div>
+    <div id="log"></div>
+    <form id="composer" hidden>
+      <textarea id="reply" placeholder="Tell it what to do next… (Ctrl/⌘+Enter to send)"></textarea>
+      <button type="button" class="mic" id="replyMic" title="Dictate">🎤</button>
+      <button class="primary">Send</button>
+    </form>
+  </section>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+let token = localStorage.getItem('sb.token') || new URLSearchParams(location.search).get('token') || '';
+if (new URLSearchParams(location.search).get('token')) { localStorage.setItem('sb.token', token); history.replaceState(null, '', location.pathname); }
+let state = { agents: [], sessions: [], queue: { queued: [], active: [] }, activity: [], repos: [] };
+let selected = localStorage.getItem('sb.selected') || null;
+let detail = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  const j = await res.json().catch(() => ({}));
+  if (res.status === 401) { askToken(); throw new Error('Unauthorized'); }
+  if (!res.ok) throw new Error(j.error || res.statusText);
+  return j;
+}
+function toast(msg) { const t = el('div', 'toast', msg); document.body.append(t); setTimeout(() => t.remove(), 4000); }
+function askToken() { const t = prompt('Switchboard access token', token); if (t != null) { token = t.trim(); localStorage.setItem('sb.token', token); location.reload(); } }
+const ago = (iso) => { const s = (Date.now() - new Date(iso)) / 1000; return s < 60 ? 'now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : Math.floor(s / 86400) + 'd'; };
+
+function renderAgents() {
+  const box = $('#agents'); box.replaceChildren();
+  if (!state.agents.length) box.append(el('div', 'muted', 'No agents configured. Add some to switchboard.config.json.'));
+  for (const a of state.agents) {
+    const c = el('div', 'card');
+    const r = el('div', 'row');
+    const left = el('div', 'title'); left.prepend(el('span', 'dot ' + (a.running ? 'running' : 'done')));
+    left.append(a.name);
+    r.append(left, el('span', 'pill', a.type === 'cli' ? a.preset : a.provider));
+    c.append(r, el('div', 'muted', `${a.roles.join(', ')}${a.model ? ' · ' + a.model : ''} · ${a.running ? `working (${a.running}/${a.maxParallel})` : 'idle'}`));
+    box.append(c);
+  }
+  for (const sel of [$('#newAgent'), $('#qAgent')]) {
+    const keep = sel.value;
+    const first = sel.id === 'qAgent' ? [new Option('any coder', '')] : [];
+    sel.replaceChildren(...first, ...state.agents.map((a) => new Option(a.name, a.id)));
+    if (keep) sel.value = keep;
+  }
+}
+function renderQueue() {
+  const q = state.queue, box = $('#queue'); box.replaceChildren();
+  $('#queueOn').checked = q.enabled;
+  if (!state.githubConfigured) box.append(el('div', 'muted', 'Connect GitHub (github.token) to use the queue.'));
+  for (const j of q.active || []) {
+    const c = el('div', 'card click'); c.onclick = () => j.sessionId && select(j.sessionId);
+    const t = el('div', 'title'); t.prepend(el('span', 'dot running')); t.append(j.title);
+    c.append(t, el('div', 'muted', `${j.key} · ${j.agentId} · ${j.step}`)); box.append(c);
+  }
+  for (const i of q.queued || []) {
+    const c = el('div', 'card'); const a = el('a', 'title', `#${i.number} ${i.title}`); a.href = i.url; a.target = '_blank';
+    c.append(a, el('div', 'muted', i.repo + ' · waiting')); box.append(c);
+  }
+  if (q.lastError) box.append(el('div', 'muted', '⚠ ' + q.lastError));
+  if (!q.active?.length && !q.queued?.length && state.githubConfigured) box.append(el('div', 'muted', 'Nothing queued.'));
+  $('#queueForm').hidden = !state.githubConfigured;
+  const repoSel = $('#qRepo'); const keep = repoSel.value;
+  repoSel.replaceChildren(...state.repos.map((r) => new Option(r, r))); if (keep) repoSel.value = keep;
+}
+function renderActivity() {
+  const box = $('#activity'); box.replaceChildren();
+  for (const a of state.activity.slice(0, 20)) {
+    const c = el('div', 'card' + (a.sessionId ? ' click' : ''));
+    if (a.sessionId) c.onclick = () => select(a.sessionId);
+    const t = el('div', 'row'); t.append(el('div', 'title', a.title), el('span', 'muted', ago(a.ts)));
+    c.append(t, el('div', 'last', a.body || ''));
+    if (a.url) { const l = el('a', 'muted', 'open ↗'); l.href = a.url; l.target = '_blank'; c.append(l); }
+    box.append(c);
+  }
+}
+function renderSessions() {
+  const box = $('#sessions'); box.replaceChildren();
+  const f = $('#filter').value;
+  const list = state.sessions.filter((s) => !f || (f === 'running' ? s.status === 'running' : !!s.issue));
+  if (!list.length) box.append(el('div', 'muted', 'No sessions yet.'));
+  for (const s of list) {
+    const c = el('div', 'card click' + (s.id === selected ? ' sel' : '')); c.onclick = () => select(s.id);
+    const r = el('div', 'row'); const t = el('div', 'title'); t.prepend(el('span', 'dot ' + s.status)); t.append(s.title);
+    r.append(t, el('span', 'muted', ago(s.updatedAt)));
+    c.append(r, el('div', 'muted', s.agentId + (s.issue ? ` · ${s.issue.repo}#${s.issue.number}` : '')), el('div', 'last', s.last));
+    box.append(c);
+  }
+}
+function addLogEntry(e) {
+  const log = $('#log');
+  const stick = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+  log.append(el('div', 'entry ' + e.kind, e.text));
+  if (stick) log.scrollTop = log.scrollHeight;
+}
+function renderDetail() {
+  const head = $('#detailHead'); head.replaceChildren(); $('#log').replaceChildren();
+  if (!detail) { head.append(el('div', 'empty', 'Pick a session')); $('#composer').hidden = true; return; }
+  const r = el('div', 'row'); const t = el('div', 'title'); t.prepend(el('span', 'dot ' + detail.status)); t.append(detail.title);
+  const btns = el('div');
+  if (detail.status === 'running') { const b = el('button', '', 'Stop'); b.onclick = () => api(`/api/sessions/${detail.id}/cancel`, { method: 'POST' }); btns.append(b); }
+  r.append(t, btns);
+  head.append(r, el('div', 'muted', `${detail.agentId} · ${detail.status}${detail.cwd ? ' · ' + detail.cwd : ''}`));
+  if (detail.issue) { const a = el('a', 'muted', `${detail.issue.repo}#${detail.issue.number} ↗`); a.href = detail.issue.url; a.target = '_blank'; head.append(a); }
+  for (const e of detail.log) addLogEntry(e);
+  $('#log').scrollTop = 1e9;
+  $('#composer').hidden = false;
+}
+async function select(id) {
+  selected = id; localStorage.setItem('sb.selected', id);
+  try { detail = await api('/api/sessions/' + id); } catch { detail = null; }
+  renderSessions(); renderDetail();
+}
+async function refresh() {
+  state = await api('/api/state');
+  renderAgents(); renderQueue(); renderActivity(); renderSessions();
+  if (selected) select(selected);
+}
+function upsertSession(s) {
+  const i = state.sessions.findIndex((x) => x.id === s.id);
+  if (i >= 0) state.sessions[i] = s; else state.sessions.unshift(s);
+  state.sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  renderSessions();
+  if (detail && detail.id === s.id && detail.status !== s.status) { detail.status = s.status; renderDetail(); }
+}
+function connect() {
+  const es = new EventSource('/api/events' + (token ? '?token=' + encodeURIComponent(token) : ''));
+  es.onmessage = (m) => {
+    const e = JSON.parse(m.data);
+    if (e.type === 'session.updated') upsertSession(e.session);
+    else if (e.type === 'session.log' && detail && e.sessionId === detail.id) { detail.log.push(e.entry); addLogEntry(e.entry); }
+    else if (e.type === 'agents') { state.agents = e.agents; renderAgents(); }
+    else if (e.type === 'queue') { state.queue = e.queue; renderQueue(); }
+    else if (e.type === 'activity') {
+      state.activity.unshift(e.activity); renderActivity();
+      if (e.activity.kind === 'notify' && 'Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
+        const n = new Notification(e.activity.title, { body: e.activity.body, tag: e.activity.ts });
+        n.onclick = () => { window.focus(); if (e.activity.sessionId) select(e.activity.sessionId); else if (e.activity.url) open(e.activity.url); };
+      }
+    }
+  };
+  es.onerror = () => { es.close(); setTimeout(connect, 3000); };
+}
+
+// Voice: Web Speech API (Chrome, Edge, Safari on Mac and Windows). Native OS dictation also works in every box.
+function attachMic(button, input, onFinal) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { button.title = 'Voice not supported in this browser: use OS dictation (Fn Fn on Mac, Win+H on Windows)'; button.style.opacity = .5; return; }
+  let rec = null;
+  button.onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = navigator.language || 'en-US'; rec.interimResults = true; rec.continuous = false;
+    const start = input.value ? input.value + ' ' : '';
+    rec.onresult = (ev) => {
+      let text = ''; for (const r of ev.results) text += r[0].transcript;
+      input.value = start + text;
+      if (ev.results[ev.results.length - 1].isFinal && onFinal) onFinal();
+    };
+    rec.onend = () => { button.classList.remove('listening'); rec = null; };
+    rec.onerror = (e) => toast('Mic: ' + e.error);
+    button.classList.add('listening'); rec.start();
+  };
+}
+
+$('#cmdForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const text = $('#cmd').value.trim(); if (!text) return;
+  try {
+    const r = await api('/api/command', { method: 'POST', body: { text, sessionId: selected } });
+    $('#cmd').value = ''; toast(r.reply);
+    if (r.sessionId) select(r.sessionId);
+  } catch (err) { toast(err.message); }
+};
+attachMic($('#cmdMic'), $('#cmd'), () => $('#cmdForm').requestSubmit());
+attachMic($('#replyMic'), $('#reply'));
+$('#composer').onsubmit = async (e) => {
+  e.preventDefault();
+  const prompt = $('#reply').value.trim(); if (!prompt || !detail) return;
+  try { await api(`/api/sessions/${detail.id}/message`, { method: 'POST', body: { prompt } }); $('#reply').value = ''; } catch (err) { toast(err.message); }
+};
+$('#reply').onkeydown = (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('#composer').requestSubmit(); };
+$('#newForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const prompt = $('#newPrompt').value.trim(); if (!prompt) return;
+  try {
+    const s = await api('/api/sessions', { method: 'POST', body: { agentId: $('#newAgent').value, prompt, cwd: $('#newCwd').value.trim() || undefined } });
+    $('#newPrompt').value = ''; select(s.id);
+  } catch (err) { toast(err.message); }
+};
+$('#queueForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const title = $('#qTitle').value.trim(); if (!title) return;
+  try { const r = await api('/api/queue', { method: 'POST', body: { title, repo: $('#qRepo').value, agentId: $('#qAgent').value || undefined } }); $('#qTitle').value = ''; toast(`Queued ${r.repo}#${r.number}`); } catch (err) { toast(err.message); }
+};
+$('#queueOn').onchange = (e) => api('/api/queue/enabled', { method: 'POST', body: { enabled: e.target.checked } }).catch((err) => toast(err.message));
+$('#filter').onchange = renderSessions;
+$('#tokenBtn').onclick = askToken;
+$('#notifBtn').onclick = async () => {
+  if (!('Notification' in window)) return toast('This browser has no desktop notifications. Use the ntfy app.');
+  const p = await Notification.requestPermission(); toast('Desktop notifications: ' + p);
+};
+setInterval(renderActivity, 60000);
+refresh().then(connect).catch((e) => toast(e.message));
+</script>
+</body>
+</html>
